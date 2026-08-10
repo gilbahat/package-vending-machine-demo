@@ -1,0 +1,74 @@
+# Build environment for the unikernel.
+#
+# Solo5 does not build on macOS -- opam reports
+#   'unmet availability conditions ... (os = "linux" | "freebsd" | "openbsd")'
+# -- so the unikernel is always built in Linux. This image is multi-arch:
+# it builds natively on arm64 (including Apple Silicon under Docker Desktop)
+# and on amd64 in CI, and Solo5 supports hvt on both.
+#
+# The image carries only the toolchain. Source is mounted at build time so
+# that iterating on the unikernel does not rebuild the image.
+#
+# Copyright (c) 2026. SPDX-License-Identifier: ISC
+
+FROM ocaml/opam:debian-12-ocaml-5.2
+
+# Native dependencies of the MirageOS stack: gmp for zarith, pkg-config for
+# solo5 discovery, and the usual build tools.
+# libseccomp-dev is required by solo5's conf-libseccomp dependency (it backs
+# the spt tender). We ship hvt, but solo5 builds all tenders for the host.
+RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+      pkg-config \
+      libgmp-dev \
+      libseccomp-dev \
+      m4 \
+      build-essential \
+      git \
+      ca-certificates \
+      curl \
+      python3 \
+    && sudo rm -rf /var/lib/apt/lists/*
+
+RUN opam update
+
+# ORDER MATTERS. solo5 provides the tender; ocaml-solo5 provides the
+# cross-compiled OCaml runtime and registers the `solo5` findlib toolchain.
+# Both must exist BEFORE any mirage package is built, otherwise packages that
+# ship a solo5 variant (mirage-sleep, mirage-mtime, ...) are compiled without
+# the cross runtime and the unikernel fails to link with undefined references
+# to caml_get_monotonic_time and friends.
+RUN opam install -y solo5 ocaml-solo5
+
+RUN opam install -y mirage
+
+# The unikernel's dependency set, installed into the switch so that the solo5
+# dune context resolves them through the findlib toolchain. Baking them into
+# the image keeps `make unikernel` to a couple of minutes instead of
+# rebuilding the world on every change.
+RUN opam install -y \
+      cmdliner-stdlib \
+      tcpip \
+      ethernet \
+      arp \
+      charrua-client \
+      mirage-net-solo5 \
+      mirage-bootvar \
+      mirage-solo5 \
+      mirage-runtime \
+      mirage-logs \
+      mirage-crypto-rng-mirage \
+      mirage-mtime mirage-ptime mirage-sleep \
+      duration \
+      cmdliner \
+      paf \
+      httpaf \
+      http-mirage-client \
+      ca-certs-nss \
+      mirage-crypto-ec \
+      digestif \
+      logs
+
+WORKDIR /src
+
+ENTRYPOINT ["opam", "exec", "--"]
+CMD ["bash"]

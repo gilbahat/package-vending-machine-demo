@@ -1,0 +1,53 @@
+# The allowlist: which package names this vending machine will serve.
+#
+# Versions are deliberately NOT pinned. The machine resolves whatever versions
+# the upstream index currently offers, which is what lets an agent fetch a
+# dependency closure it did not know about in advance. Safety of the resulting
+# upstream URL is enforced by the F* validator, not by this file.
+#
+# This must be a TRANSITIVE CLOSURE. `pip install requests` needs urllib3,
+# certifi, charset-normalizer and idna too; a closure that is merely "the
+# things I asked for" fails on first use. See scripts/closure.sh for deriving
+# one mechanically from a requirements file.
+#
+# Format: ecosystem:name   (ecosystem is 'pypi' or 'npm')
+
+# ---- requests and its closure ----
+pypi:requests
+pypi:urllib3
+pypi:certifi
+pypi:charset-normalizer
+pypi:idna
+
+# ---- numerical stack ----
+pypi:numpy
+pypi:scipy
+
+# ---- test tooling and its closure ----
+pypi:pytest
+pypi:pluggy
+pypi:iniconfig
+pypi:packaging
+pypi:exceptiongroup
+pypi:tomli
+
+# ---- common utilities ----
+pypi:pyyaml
+pypi:typing-extensions
+pypi:attrs
+pypi:click
+pypi:jinja2
+pypi:markupsafe
+
+# ---- cryptography and its closure ----
+pypi:cryptography
+pypi:cffi
+pypi:pycparser
+
+# ---- npm ----
+npm:left-pad
+npm:semver
+npm:lodash
+npm:chalk
+npm:ansi-styles
+npm:supports-color

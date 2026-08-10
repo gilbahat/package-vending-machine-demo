@@ -1,0 +1,43 @@
+# Signing keys. NEVER commit these -- manifest.key is the private half of the
+# key that authorises what this machine will vend.
+keys/
+
+# Build products
+build/
+manifest.bin
+
+# The EverParse toolchain (~2 GB extracted). Fetched by `make toolchain`.
+.toolchain/
+
+# Mirage generates these into unikernel/ at configure time.
+unikernel/_build/
+unikernel/dist/
+unikernel/duniverse/
+unikernel/mirage/
+unikernel/vendor/
+unikernel/assets/
+unikernel/main.ml
+unikernel/key_gen.ml
+unikernel/dune
+unikernel/dune.build
+unikernel/dune.config
+unikernel/dune-project
+unikernel/dune-workspace
+unikernel/Makefile
+unikernel/manifest.json
+unikernel/*.opam
+unikernel/*.install
+
+# NOT ignored, on purpose:
+#   generated/    committed so `make test` works without the toolchain, and so
+#                 `make verify` can diff the specs' output against what ships.
+
+*.o
+*.a
+*.cmx
+*.cmi
+*.annot
+.DS_Store
+
+# F* incremental check files
+proofs/*.checked

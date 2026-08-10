@@ -1,0 +1,22 @@
+; The verified library: generated C plus the thin trusted boundary around it.
+;
+; The C sources live in ../generated (produced by KaRaMeL and EverParse) and
+; are copied in rather than duplicated, so there is exactly one copy in the
+; repository and `make verify` has a single thing to diff.
+;
+; Note that VendManifestWrapper.c is copied but deliberately NOT compiled:
+; vend_shim.c supersedes it, because the generated wrapper does not require
+; the parse to consume the whole buffer. See verified/vend_shim.h.
+
+(copy_files# (files ../generated/*.c))
+
+(copy_files# (files ../generated/*.h))
+
+(library
+ (name vend_verified)
+ (public_name vend-verified)
+ (foreign_stubs
+  (language c)
+  (names Vend_Url VendManifest vend_shim vend_stubs)
+  ; -I. so the copied headers resolve from the build directory.
+  (flags :standard -I. -Wno-parentheses)))

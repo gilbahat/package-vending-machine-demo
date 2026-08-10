@@ -1,0 +1,102 @@
+name: ci
+
+# What CI can and cannot do here, stated plainly:
+#
+#   * It runs the adversarial C tests and the fuzzer.               (yes)
+#   * It re-checks every F* proof and regenerates the C from the
+#     specs, failing if the result differs from what is committed.  (yes)
+#   * It cross-builds vend.hvt.                                     (yes)
+#   * It BOOTS the unikernel.                                       (no)
+#
+# solo5-hvt needs /dev/kvm. Standard GitHub-hosted runners do not provide
+# nested virtualisation, so the boot-and-attack job is defined but gated: run
+# it on a self-hosted Linux runner with KVM, or locally per the README.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: adversarial tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run the C test suites
+        run: make test
+
+  manifest:
+    name: manifest round-trip
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install cryptography
+      - name: Build a signed manifest and validate it with EverParse's parser
+        run: |
+          make manifest
+          cc -std=c11 -O2 -Igenerated -Iverified -o build/test_manifest \
+             test/test_manifest.c verified/vend_shim.c generated/VendManifest.c
+          ./build/test_manifest manifest.bin
+
+  verify:
+    name: re-check proofs and regenerate C
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ~260 MB, pinned by SHA-256 in scripts/fetch-toolchain.sh.
+      - name: Cache the EverParse toolchain
+        id: toolchain
+        uses: actions/cache@v4
+        with:
+          path: .toolchain
+          key: everparse-v2026.07.02-linux-x86_64
+
+      - name: Fetch the toolchain
+        if: steps.toolchain.outputs.cache-hit != 'true'
+        run: make toolchain
+
+      # Fails if any proof fails, or if generated/ has drifted from the specs.
+      - name: Verify
+        run: make verify
+
+  unikernel:
+    name: cross-build vend.hvt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install cryptography
+      - name: Build a manifest to bake in
+        run: make manifest
+      - name: Cross-build the unikernel
+        run: make unikernel
+      - name: Show what the image is allowed to touch
+        run: |
+          ls -la build/vend.hvt
+          docker run --rm -v "$PWD":/src -w /src pvm-build:latest \
+            solo5-elftool query-manifest build/vend.hvt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vend.hvt
+          path: build/vend.hvt
+
+  boot:
+    name: boot and replay attacks (needs KVM)
+    # Standard GitHub runners have no /dev/kvm. Enable this on a self-hosted
+    # runner that does, or drop the guard if GitHub ever exposes nested virt.
+    if: ${{ false }}
+    runs-on: self-hosted
+    needs: unikernel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: vend.hvt
+          path: build
+      - name: Boot the unikernel and fire the exploit classes at it
+        run: |
+          bash scripts/run-hvt.sh &
+          sleep 5
+          bash attack/replay.sh

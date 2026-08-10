@@ -1,0 +1,74 @@
+/*
+  manifest.3d -- the vending machine's allowlist, as a wire format.
+  Compiled by EverParse/3d into a C validator that is proved memory-safe,
+  arithmetically safe, and to accept exactly the language described here.
+
+  WHY THIS IS A BINARY FORMAT AND NOT JSON
+  ----------------------------------------
+  The manifest is the one input the unikernel parses before it will talk to
+  anyone. Artifactory's equivalent trust decisions were driven by formats
+  parsed with general-purpose deserialisers -- the root of CVE-2026-65617, a
+  CWE-502 deserialisation RCE. A fixed-width, length-prefixed, heap-free format
+  with a generated validator has no deserialiser to attack: there is no type
+  confusion because there are no dynamic types, and no allocation because every
+  bound is checked before a byte is read.
+
+  NOTE ON REDUNDANCY
+  ------------------
+  There is deliberately NO entry-count field. The number of entries follows
+  from entries_len alone. Formats that carry both a count and a size invite
+  parser differentials, where two implementations disagree about which one
+  wins; the safest resolution is to make the disagreement unrepresentable.
+
+  The signature is NOT part of this format. The unikernel verifies an Ed25519
+  signature over these bytes BEFORE handing them to the generated validator, so
+  the validator only ever sees bytes the manifest signer authorised.
+
+  Copyright (c) 2026. SPDX-License-Identifier: ISC
+*/
+
+/* Ecosystem tags. Must agree with Vend.Url.Spec.upstream in the F* proof;
+   the OCaml boundary asserts this correspondence. */
+#define ECOSYSTEM_PYPI 0
+#define ECOSYSTEM_NPM  1
+
+/* Longest package name we will store. PyPI caps names at 214 characters and
+   npm at 214 including scope, but names that long do not occur in practice and
+   a smaller bound keeps the per-entry cost predictable. */
+#define MAX_NAME_LEN 128
+
+/* One allowlisted package name. Versions are NOT pinned: the machine resolves
+   whatever versions the upstream index offers, which is what lets an agent
+   fetch a dependency closure it did not know about in advance. Safety of the
+   resulting URL is the F* validator's job, not this format's. */
+typedef struct _VendEntry
+{
+  UINT8 ecosystem { ecosystem <= ECOSYSTEM_NPM };
+
+  UINT8 name_len  { name_len >= 1 && name_len <= MAX_NAME_LEN };
+
+  UINT8 name[:byte-size name_len];
+
+} VendEntry;
+
+/* The manifest as a whole. */
+entrypoint
+typedef struct _VendManifest
+{
+  /* "VMC1" -- rejects a truncated or mistyped blob before anything else. */
+  UINT32BE magic          { magic == 0x564D4331 };
+
+  UINT16BE format_version { format_version == 1 };
+
+  /* Must be zero: reserved space that a future version may define. Rejecting
+     non-zero now means an old unikernel cannot silently ignore a field a newer
+     signer considered meaningful. */
+  UINT16BE reserved       { reserved == 0 };
+
+  /* Total size of the entry list in bytes. 1 MiB is far beyond any realistic
+     dependency closure and bounds the work the validator can be made to do. */
+  UINT32BE entries_len    { entries_len <= 1048576 };
+
+  VendEntry entries[:byte-size entries_len];
+
+} VendManifest;
