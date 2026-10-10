@@ -1,0 +1,156 @@
+#!/usr/bin/env python3
+"""vend -- client for the package vending machine. Standard library only,
+because the sandbox it runs in has no other way to get anything.
+
+    vend status
+    vend allowlist
+    vend resolve pypi requests
+    vend fetch pypi requests urllib3 ...     newest compatible artifact(s)
+    vend fetch-all [--ecosystem pypi]        every allowlisted package
+
+Downloads land in ./downloads (-d to change). Each artifact is checked
+against the digest the machine reports before it is kept. Then, offline:
+
+    python3 downloads/pip-*.whl/pip install --user --break-system-packages \\
+        --no-index --find-links=downloads requests
+
+Copyright (c) 2026. SPDX-License-Identifier: ISC
+"""
+
+import argparse
+import hashlib
+import json
+import os
+import platform
+import re
+import sys
+import urllib.error
+import urllib.request
+
+BASE = os.environ.get("VEND_URL", "http://vend:8080")
+
+FINAL = re.compile(r"^\d+(\.\d+)*$")
+WHEEL = re.compile(
+    r"^(?P<name>.+?)-(?P<ver>[^-]+)(-\d[^-]*)?-(?P<py>[^-]+)-(?P<abi>[^-]+)-(?P<plat>[^-]+)\.whl$"
+)
+
+
+def get(path):
+    try:
+        with urllib.request.urlopen(BASE + path, timeout=300) as r:
+            return r.read(), dict(r.headers)
+    except urllib.error.HTTPError as e:
+        body = e.read().decode(errors="replace")
+        sys.exit(f"vend: {path}: HTTP {e.code} {body}")
+    except urllib.error.URLError as e:
+        sys.exit(f"vend: cannot reach {BASE}: {e.reason}")
+
+
+def get_json(path):
+    return json.loads(get(path)[0])
+
+
+def vkey(v):
+    return tuple(int(x) for x in v.split("."))
+
+
+def newest(versions):
+    finals = [v for v in versions if FINAL.match(v)]
+    return max(finals, key=vkey) if finals else sorted(versions)[-1]
+
+
+def wheel_ok(filename):
+    """A deliberately small subset of PEP 425 for this interpreter."""
+    m = WHEEL.match(filename)
+    if not m:
+        return False
+    major, minor = sys.version_info[:2]
+    cp = f"cp{major}{minor}"
+    arch = platform.machine()
+    pys, abi, plats = m["py"].split("."), m["abi"], m["plat"].split(".")
+
+    def py_ok(t):
+        if t in ("py3", f"py{major}{minor}", cp):
+            return True
+        # abi3 wheels built for an older CPython 3.x run on this one
+        return abi == "abi3" and t.startswith("cp3") and int(t[3:] or 0) <= minor
+
+    def plat_ok(p):
+        return p == "any" or (p.startswith("manylinux") and p.endswith("_" + arch))
+
+    return (any(map(py_ok, pys)) and abi in ("none", "abi3", cp)
+            and any(map(plat_ok, plats)))
+
+
+def pick(eco, artifacts):
+    ver = newest({a["version"] for a in artifacts})
+    mine = [a for a in artifacts if a["version"] == ver]
+    if eco == "npm":
+        return mine[:1]
+    wheels = [a for a in mine if wheel_ok(a["filename"])]
+    if wheels:
+        return wheels[:1]
+    return [a for a in mine if a["filename"].endswith((".tar.gz", ".zip"))][:1]
+
+
+def download(a, dest):
+    path = os.path.join(dest, os.path.basename(a["filename"]))
+    if os.path.exists(path):
+        print(f"  have  {a['filename']}")
+        return
+    body, headers = get("/v1/a/" + a["id"])
+    got = hashlib.sha256(body).hexdigest()
+    said = headers.get("x-vend-digest", headers.get("X-Vend-Digest", ""))
+    if said != "sha256:" + got or (a.get("sha256") and a["sha256"] != got):
+        sys.exit(f"vend: digest mismatch on {a['filename']}; discarded")
+    with open(path, "wb") as f:
+        f.write(body)
+    print(f"  got   {a['filename']}  ({len(body):,} bytes, sha256 {got[:12]}...)")
+
+
+def fetch(eco, names, dest):
+    os.makedirs(dest, exist_ok=True)
+    for name in names:
+        r = get_json(f"/v1/{eco}/{name}")
+        chosen = pick(eco, r["artifacts"])
+        if not chosen:
+            print(f"  none  {eco}:{name} -- no artifact compatible with this machine")
+            continue
+        for a in chosen:
+            download(a, dest)
+
+
+def main():
+    ap = argparse.ArgumentParser(prog="vend", description=__doc__.split("\n")[0])
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("status")
+    sub.add_parser("allowlist")
+    p = sub.add_parser("resolve")
+    p.add_argument("ecosystem", choices=["pypi", "npm"])
+    p.add_argument("name")
+    p = sub.add_parser("fetch")
+    p.add_argument("ecosystem", choices=["pypi", "npm"])
+    p.add_argument("names", nargs="+")
+    p.add_argument("-d", "--dest", default="downloads")
+    p = sub.add_parser("fetch-all")
+    p.add_argument("--ecosystem", choices=["pypi", "npm"], default="pypi")
+    p.add_argument("-d", "--dest", default="downloads")
+    args = ap.parse_args()
+
+    if args.cmd in ("status", "allowlist"):
+        print(json.dumps(get_json("/v1/" + args.cmd), indent=2))
+    elif args.cmd == "resolve":
+        r = get_json(f"/v1/{args.ecosystem}/{args.name}")
+        for a in r["artifacts"]:
+            print(f"{a['id']}  {a['version']:<12} {a['filename']}")
+        print(f"{r['count']} artifacts")
+    elif args.cmd == "fetch":
+        fetch(args.ecosystem, args.names, args.dest)
+    elif args.cmd == "fetch-all":
+        allow = get_json("/v1/allowlist")["packages"]
+        names = [p["name"] for p in allow if p["ecosystem"] == args.ecosystem]
+        fetch(args.ecosystem, names, args.dest)
+
+
+if __name__ == "__main__":
+    main()

@@ -321,6 +321,8 @@ make manifest
 # 4. Cross-build the unikernel. Solo5 needs Linux, so this runs in Docker.
 make unikernel
 
+# 5. Boot it in AWS behind a simulated sandbox. See deploy/aws/README.md.
+cd deploy/aws && terraform apply
 ```
 
 ## Reproducibility
@@ -345,6 +347,11 @@ only the slice of PyPI/npm needed to fetch a dependency closure.
 will not run on macOS — Docker Desktop on Apple Silicon exposes no nested
 virtualisation — and standard GitHub Actions runners have no KVM either, so CI
 proof-checks and cross-builds but does not boot the result.
+
+`deploy/aws/` is Terraform that provides one: a VPC that reproduces the
+escape's conditions, with a sandboxed agent VM whose only route anywhere is
+the vending machine, running under nested KVM on an ordinary EC2 instance. See
+[deploy/aws/README.md](deploy/aws/README.md).
 
 ## Licence
 

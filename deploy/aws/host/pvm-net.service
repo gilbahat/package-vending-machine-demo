@@ -1,0 +1,13 @@
+[Unit]
+Description=Package vending machine: tap device and chokepoint firewall
+After=network-online.target
+Wants=network-online.target
+Before=pvm-vend.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/pvm-net.sh
+
+[Install]
+WantedBy=multi-user.target

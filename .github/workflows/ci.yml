@@ -81,6 +81,21 @@ jobs:
           name: vend.hvt
           path: build/vend.hvt
 
+  terraform:
+    name: terraform (deploy/aws)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: deploy/aws
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false
+      - run: terraform validate
+      - name: Shellcheck the provisioning scripts
+        run: shellcheck host/*.sh agent/escape-check
+
   boot:
     name: boot and replay attacks (needs KVM)
     # Standard GitHub runners have no /dev/kvm. Enable this on a self-hosted
