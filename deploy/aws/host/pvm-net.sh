@@ -24,7 +24,7 @@ GUEST_NET="${GUEST_IP%.*}.0/24"
 
 SB_IF="$(ip -o link | awk -v m="$SANDBOX_MAC" 'tolower($0) ~ m {sub(":","",$2); print $2; exit}')"
 PUB_IF="$(ip route show default | awk -v sb="$SB_IF" '$5 != sb {print $5; exit}')"
-[ -n "$SB_IF" ] && [ -n "$PUB_IF" ] || { echo "cannot identify interfaces" >&2; exit 1; }
+if [ -z "$SB_IF" ] || [ -z "$PUB_IF" ]; then echo "cannot identify interfaces" >&2; exit 1; fi
 echo "public: $PUB_IF  sandbox: $SB_IF  tap: $TAP  guest: $GUEST_IP"
 
 # --- sandbox leg -------------------------------------------------------------
