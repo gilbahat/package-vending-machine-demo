@@ -14,11 +14,13 @@ FSTAR      := $(TOOLCHAIN)/bin/fstar.exe
 KRML       := $(TOOLCHAIN)/bin/krml
 THREED     := $(TOOLCHAIN)/bin/3d.exe
 ULIB       := $(TOOLCHAIN)/lib/fstar/ulib
-KRMLLIB    := $(TOOLCHAIN)/krmllib
+KRMLLIB    := $(TOOLCHAIN)/lib/krml
 
 BUILD      := build
 CC         ?= cc
-CFLAGS     := -std=c11 -Wall -Wextra -Wno-unused-parameter -Wno-parentheses -O2
+# _DEFAULT_SOURCE: glibc hides be32toh() and friends under strict -std=c11,
+# and EverParseEndianness.h needs them on Linux.
+CFLAGS     := -std=c11 -D_DEFAULT_SOURCE -Wall -Wextra -Wno-unused-parameter -Wno-parentheses -O2
 INCLUDES   := -Igenerated -Iverified
 
 FSTAR_OPTS := --include $(ULIB) --include $(KRMLLIB) --include proofs
@@ -47,10 +49,11 @@ test-url: | $(BUILD)
 	    test/test_url.c generated/Vend_Url.c
 	@$(BUILD)/test_url
 
+# With MANIFEST=<file>, validate that file instead of running the suite.
 test-manifest: | $(BUILD)
 	@$(CC) $(CFLAGS) $(INCLUDES) -o $(BUILD)/test_manifest \
 	    test/test_manifest.c verified/vend_shim.c generated/VendManifest.c
-	@$(BUILD)/test_manifest
+	@$(BUILD)/test_manifest $(MANIFEST)
 
 # ---------------------------------------------------------------------------
 # Verification -- needs the EverParse toolchain.
@@ -134,10 +137,13 @@ manifest: keys/manifest.key
 # Unikernel -- Solo5 requires Linux, so this always runs in Docker.
 # ---------------------------------------------------------------------------
 
-unikernel:
-	@docker build -f docker/Dockerfile.build -t pvm-build:latest .
-	@docker run --rm -v "$(CURDIR)":/src -w /src pvm-build:latest \
-	    bash scripts/build-unikernel.sh
+unikernel: | $(BUILD)
+	@test -f manifest.bin || { echo "manifest.bin missing -- run 'make manifest' first" >&2; exit 1; }
+	@docker build -f docker/Dockerfile.build --target toolchain -t pvm-build:latest .
+	@docker build -f docker/Dockerfile.build --target artifact \
+	    --output type=local,dest=$(BUILD)/hvt .
+	@mv $(BUILD)/hvt/vend.hvt $(BUILD)/vend.hvt && rmdir $(BUILD)/hvt
+	@ls -la $(BUILD)/vend.hvt
 
 run:
 	@bash scripts/run-hvt.sh

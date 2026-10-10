@@ -6,12 +6,24 @@
 # it builds natively on arm64 (including Apple Silicon under Docker Desktop)
 # and on amd64 in CI, and Solo5 supports hvt on both.
 #
-# The image carries only the toolchain. Source is mounted at build time so
-# that iterating on the unikernel does not rebuild the image.
+# Three stages:
+#
+#   toolchain  OCaml, Solo5 and the MirageOS dependency set. Changes rarely and
+#              stays cached. Also tagged pvm-build:latest for running
+#              solo5-elftool against the result.
+#   build      copies the source in and runs scripts/build-unikernel.sh.
+#   artifact   just vend.hvt, exported to the host with `--output`.
+#
+# Source is copied in rather than bind-mounted: the image runs as `opam`
+# (uid 1000), and a bind-mounted checkout owned by any other uid -- a GitHub
+# runner's is 1001 -- is not writable from inside. `--output` writes the result
+# back as the invoking user, so no ownership ever crosses the boundary.
+# .dockerignore whitelists what the build needs; the signing key never enters
+# the build context.
 #
 # Copyright (c) 2026. SPDX-License-Identifier: ISC
 
-FROM ocaml/opam:debian-12-ocaml-5.2
+FROM ocaml/opam:debian-12-ocaml-5.2 AS toolchain
 
 # Native dependencies of the MirageOS stack: gmp for zarith, pkg-config for
 # solo5 discovery, and the usual build tools.
@@ -37,9 +49,12 @@ RUN opam update
 # ship a solo5 variant (mirage-sleep, mirage-mtime, ...) are compiled without
 # the cross runtime and the unikernel fails to link with undefined references
 # to caml_get_monotonic_time and friends.
-RUN opam install -y solo5 ocaml-solo5
+RUN opam install -y solo5.0.13.0 ocaml-solo5
 
-RUN opam install -y mirage
+# opam-monorepo (run by `make lock`) is held below 0.5: 0.5.0 links a
+# development opam 2.6 and refuses to work on this image's opam 2.1 root
+# ("Write lock attempt in safe mode").
+RUN opam install -y mirage.4.11.2 'opam-monorepo<0.5.0'
 
 # The unikernel's dependency set, installed into the switch so that the solo5
 # dune context resolves them through the findlib toolchain. Baking them into
@@ -72,3 +87,16 @@ WORKDIR /src
 
 ENTRYPOINT ["opam", "exec", "--"]
 CMD ["bash"]
+
+# ---------------------------------------------------------------------------
+
+FROM toolchain AS build
+
+# Created as `opam` so the build can write next to its sources.
+RUN mkdir /home/opam/src
+WORKDIR /home/opam/src
+COPY --chown=opam:opam . .
+RUN opam exec -- bash scripts/build-unikernel.sh
+
+FROM scratch AS artifact
+COPY --from=build /home/opam/src/build/vend.hvt /vend.hvt
