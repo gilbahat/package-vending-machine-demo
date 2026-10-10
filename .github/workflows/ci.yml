@@ -23,7 +23,7 @@ jobs:
     name: adversarial tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build and run the C test suites
         run: make test
 
@@ -31,28 +31,27 @@ jobs:
     name: manifest round-trip
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: pip install cryptography
       - name: Build a signed manifest and validate it with EverParse's parser
         run: |
           make manifest
-          cc -std=c11 -O2 -Igenerated -Iverified -o build/test_manifest \
-             test/test_manifest.c verified/vend_shim.c generated/VendManifest.c
-          ./build/test_manifest manifest.bin
+          make test-manifest MANIFEST=manifest.bin
 
   verify:
     name: re-check proofs and regenerate C
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      # ~260 MB, pinned by SHA-256 in scripts/fetch-toolchain.sh.
+      # ~260 MB, pinned by SHA-256 in scripts/fetch-toolchain.sh; the key
+      # follows that script, so bumping the pin invalidates the cache.
       - name: Cache the EverParse toolchain
         id: toolchain
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .toolchain
-          key: everparse-v2026.07.02-linux-x86_64
+          key: everparse-${{ runner.os }}-${{ hashFiles('scripts/fetch-toolchain.sh') }}
 
       - name: Fetch the toolchain
         if: steps.toolchain.outputs.cache-hit != 'true'
@@ -66,7 +65,7 @@ jobs:
     name: cross-build vend.hvt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: pip install cryptography
       - name: Build a manifest to bake in
         run: make manifest
@@ -77,10 +76,25 @@ jobs:
           ls -la build/vend.hvt
           docker run --rm -v "$PWD":/src -w /src pvm-build:latest \
             solo5-elftool query-manifest build/vend.hvt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: vend.hvt
           path: build/vend.hvt
+
+  terraform:
+    name: terraform (deploy/aws)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: deploy/aws
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false
+      - run: terraform validate
+      - name: Shellcheck the provisioning scripts
+        run: shellcheck host/*.sh agent/escape-check
 
   boot:
     name: boot and replay attacks (needs KVM)
@@ -90,8 +104,8 @@ jobs:
     runs-on: self-hosted
     needs: unikernel
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: vend.hvt
           path: build

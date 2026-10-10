@@ -1,0 +1,12 @@
+# Whitelist: only what scripts/build-unikernel.sh reads. In particular
+# keys/manifest.key never enters the build context, and neither does the
+# ~2 GB .toolchain/.
+*
+!generated/
+!verified/
+!scripts/build-unikernel.sh
+!unikernel/config.ml
+!unikernel/resolve.ml
+!unikernel/unikernel.ml
+!manifest.bin
+!keys/manifest.pub
