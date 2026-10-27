@@ -174,7 +174,7 @@ no initialiser to call, and the only runtime dependency is `<stdint.h>` and
 ### At runtime
 
 `solo5-hvt` gives the guest a hardware-virtualised context whose **entire**
-interface to the outside world is this, from `solo5-0.13.0/include/hvt_abi.h`:
+interface to the outside world is this, from `solo5-0.13.1/include/hvt_abi.h`:
 
 ```c
 enum hvt_hypercall {
@@ -334,7 +334,7 @@ artefact and the proof are demonstrably the same thing. Drift is a build
 failure.
 
 Pinned versions: EverParse `v2026.10.06` (bundling F\* 2026.03.24, KaRaMeL,
-Z3 4.13.3), Solo5 `0.13.0`, MirageOS `4.11.2`. `scripts/fetch-toolchain.sh`
+Z3 4.13.3), Solo5 `0.13.1`, MirageOS `4.11.2`. `scripts/fetch-toolchain.sh`
 verifies the toolchain tarball against the SHA-256 GitHub publishes.
 
 ## Status and limitations

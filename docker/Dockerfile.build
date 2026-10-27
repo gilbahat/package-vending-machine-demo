@@ -49,7 +49,7 @@ RUN opam update
 # ship a solo5 variant (mirage-sleep, mirage-mtime, ...) are compiled without
 # the cross runtime and the unikernel fails to link with undefined references
 # to caml_get_monotonic_time and friends.
-RUN opam install -y solo5.0.13.0 ocaml-solo5
+RUN opam install -y solo5.0.13.1 ocaml-solo5
 
 # opam-monorepo (run by `make lock`) is held below 0.5: 0.5.0 links a
 # development opam 2.6 and refuses to work on this image's opam 2.1 root
