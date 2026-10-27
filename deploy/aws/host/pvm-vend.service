@@ -1,0 +1,30 @@
+[Unit]
+Description=Package vending machine (vend.hvt under solo5-hvt)
+Requires=pvm-net.service
+After=pvm-net.service
+
+[Service]
+EnvironmentFile=/etc/pvm.env
+# Unprivileged: /dev/kvm via the kvm group, and tap100 is created owned by
+# this user, so the tender needs no capabilities at all.
+User=vend
+Group=vend
+SupplementaryGroups=kvm
+ExecStart=/usr/local/bin/solo5-hvt --mem=${GUEST_MEM_MB} --net:service=tap100 -- \
+  /opt/pvm/vend.hvt --ipv4=${GUEST_IP}/24 --ipv4-gateway=${GUEST_GW}
+Restart=on-failure
+RestartSec=2
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+# AF_INET only for the SIOCGIFMTU ioctl solo5's tap_attach makes.
+RestrictAddressFamilies=AF_UNIX AF_INET
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

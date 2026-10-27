@@ -174,7 +174,7 @@ no initialiser to call, and the only runtime dependency is `<stdint.h>` and
 ### At runtime
 
 `solo5-hvt` gives the guest a hardware-virtualised context whose **entire**
-interface to the outside world is this, from `solo5-0.12.0/include/hvt_abi.h`:
+interface to the outside world is this, from `solo5-0.13.1/include/hvt_abi.h`:
 
 ```c
 enum hvt_hypercall {
@@ -236,8 +236,9 @@ Being precise about this is the point; a demo that overclaims is worse than none
 * the URL gate, against `safe_url` (`proofs/`, ~500 lines of F\*)
 * the manifest parser, against `spec/VendManifest.3d` (74 lines)
 
-**Generated from those specs** — 701 lines of C, committed in `generated/` and
-re-derivable with `make verify`.
+**Generated from those specs** — 732 lines of C (`Vend_Url.{c,h}` and
+`VendManifest.{c,h}`), committed in `generated/` and re-derivable with
+`make verify`.
 
 **Hand-written and therefore trusted** — deliberately tiny, and the first thing
 a reviewer should read:
@@ -319,6 +320,9 @@ make manifest
 
 # 4. Cross-build the unikernel. Solo5 needs Linux, so this runs in Docker.
 make unikernel
+
+# 5. Boot it in AWS behind a simulated sandbox. See deploy/aws/README.md.
+cd deploy/aws && terraform apply
 ```
 
 ## Reproducibility
@@ -329,8 +333,8 @@ regenerates the C, and **diffs it against what is committed**, so the shipped
 artefact and the proof are demonstrably the same thing. Drift is a build
 failure.
 
-Pinned versions: EverParse `v2026.07.02` (bundling F\* 2026.03.24, KaRaMeL,
-Z3 4.13.3), Solo5 `0.12.0`, MirageOS `4.11.2`. `scripts/fetch-toolchain.sh`
+Pinned versions: EverParse `v2026.10.06` (bundling F\* 2026.03.24, KaRaMeL,
+Z3 4.13.3), Solo5 `0.13.1`, MirageOS `4.11.2`. `scripts/fetch-toolchain.sh`
 verifies the toolchain tarball against the SHA-256 GitHub publishes.
 
 ## Status and limitations
@@ -343,6 +347,11 @@ only the slice of PyPI/npm needed to fetch a dependency closure.
 will not run on macOS — Docker Desktop on Apple Silicon exposes no nested
 virtualisation — and standard GitHub Actions runners have no KVM either, so CI
 proof-checks and cross-builds but does not boot the result.
+
+`deploy/aws/` is Terraform that provides one: a VPC that reproduces the
+escape's conditions, with a sandboxed agent VM whose only route anywhere is
+the vending machine, running under nested KVM on an ordinary EC2 instance. See
+[deploy/aws/README.md](deploy/aws/README.md).
 
 ## Licence
 

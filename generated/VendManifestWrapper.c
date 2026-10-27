@@ -1,6 +1,7 @@
 #include "VendManifestWrapper.h"
 #include "EverParse.h"
 #include "VendManifest.h"
+
 void VendManifestEverParseError(const char *StructName, const char *FieldName, const char *Reason);
 
 static
@@ -28,8 +29,9 @@ void DefaultErrorHandler(
 BOOLEAN VendManifestCheckVendManifest(uint8_t *base, uint32_t len) {
 	EVERPARSE_ERROR_FRAME frame;
 	frame.filled = FALSE;
-	uint64_t result = VendManifestValidateVendManifest( (uint8_t*)&frame, &DefaultErrorHandler, base, len, 0);
-	if (EverParseIsError(result))
+	uint64_t ep_status = VendManifestValidateVendManifest( (uint8_t*)&frame, &DefaultErrorHandler, base, len, 0);
+
+	if (EverParseIsError(ep_status))
 	{
 		if (frame.filled)
 		{

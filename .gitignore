@@ -41,3 +41,9 @@ unikernel/*.install
 
 # F* incremental check files
 proofs/*.checked
+
+# Terraform (deploy/aws). The provider lock file IS committed.
+deploy/aws/.terraform/
+deploy/aws/*.tfstate
+deploy/aws/*.tfstate.*
+deploy/aws/*.tfvars

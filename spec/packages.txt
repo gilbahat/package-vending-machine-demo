@@ -12,6 +12,12 @@
 #
 # Format: ecosystem:name   (ecosystem is 'pypi' or 'npm')
 
+# ---- bootstrap ----
+# A sandbox image need not ship pip. A wheel is runnable as a zip, so an agent
+# can fetch pip itself through the machine and install with
+#   python3 pip-*.whl/pip install --no-index --find-links=./downloads <pkg>
+pypi:pip
+
 # ---- requests and its closure ----
 pypi:requests
 pypi:urllib3
