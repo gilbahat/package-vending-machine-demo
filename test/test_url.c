@@ -23,12 +23,6 @@
 
 #include "Vend_Url.h"
 
-_Noreturn void vend_panic(const char *msg)
-{
-    fprintf(stderr, "PANIC: %s\n", msg);
-    abort();
-}
-
 /* ------------------------------------------------------------------ */
 /* An independent restatement of Vend.Url.Spec.safe_url.               */
 /* Deliberately written from the prose in the spec, not from the       */
@@ -38,9 +32,9 @@ _Noreturn void vend_panic(const char *msg)
 static const char *prefix_for(Vend_Url_upstream_tag t)
 {
     switch (t) {
-    case Vend_Url_TagPypiIndex:   return "https://pypi.org/simple/";
-    case Vend_Url_TagPypiFiles:   return "https://files.pythonhosted.org/";
-    case Vend_Url_TagNpmRegistry: return "https://registry.npmjs.org/";
+    case VEND_URL_TAGPYPIINDEX:   return "https://pypi.org/simple/";
+    case VEND_URL_TAGPYPIFILES:   return "https://files.pythonhosted.org/";
+    case VEND_URL_TAGNPMREGISTRY: return "https://registry.npmjs.org/";
     default:                      abort();
     }
 }
@@ -88,87 +82,87 @@ struct tcase {
 
 static struct tcase cases[] = {
   /* ---- legitimate traffic the vending machine MUST serve ---------- */
-  { "pypi simple index for a package", "-", Vend_Url_TagPypiIndex,
+  { "pypi simple index for a package", "-", VEND_URL_TAGPYPIINDEX,
     "https://pypi.org/simple/numpy/", 0, ACCEPT },
-  { "pypi wheel, content-addressed path", "-", Vend_Url_TagPypiFiles,
+  { "pypi wheel, content-addressed path", "-", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org/packages/1a/2b/3c/"
     "numpy-2.1.0-cp312-cp312-manylinux_2_17_x86_64.whl", 0, ACCEPT },
-  { "pypi sdist with ~ and _ in name", "-", Vend_Url_TagPypiFiles,
+  { "pypi sdist with ~ and _ in name", "-", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org/packages/aa/bb/typing_extensions-4.12.2.tar.gz",
     0, ACCEPT },
-  { "npm packument", "-", Vend_Url_TagNpmRegistry,
+  { "npm packument", "-", VEND_URL_TAGNPMREGISTRY,
     "https://registry.npmjs.org/left-pad", 0, ACCEPT },
-  { "npm scoped tarball with /-/ separator", "-", Vend_Url_TagNpmRegistry,
+  { "npm scoped tarball with /-/ separator", "-", VEND_URL_TAGNPMREGISTRY,
     "https://registry.npmjs.org/left-pad/-/left-pad-1.3.0.tgz", 0, ACCEPT },
 
   /* ---- SSRF: redirect the fetch to an attacker-chosen host --------- */
   { "userinfo authority confusion", "CVE-2026-65923/-65924/-65925 (SSRF)",
-    Vend_Url_TagPypiFiles,
+    VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org@evil.example/payload", 0, REJECT },
   { "allowed host appears, but not at position 0", "SSRF",
-    Vend_Url_TagPypiFiles,
+    VEND_URL_TAGPYPIFILES,
     "https://evil.example/files.pythonhosted.org/payload", 0, REJECT },
-  { "backslash host confusion", "SSRF", Vend_Url_TagPypiFiles,
+  { "backslash host confusion", "SSRF", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org\\@evil.example/x", 0, REJECT },
-  { "empty segment reopening authority", "SSRF", Vend_Url_TagPypiFiles,
+  { "empty segment reopening authority", "SSRF", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org//evil.example/x", 0, REJECT },
-  { "scheme switch to file://", "SSRF", Vend_Url_TagPypiFiles,
+  { "scheme switch to file://", "SSRF", VEND_URL_TAGPYPIFILES,
     "file:///etc/passwd", 0, REJECT },
-  { "scheme switch to gopher://", "SSRF", Vend_Url_TagPypiFiles,
+  { "scheme switch to gopher://", "SSRF", VEND_URL_TAGPYPIFILES,
     "gopher://127.0.0.1:11211/_stats", 0, REJECT },
-  { "cloud metadata endpoint", "SSRF", Vend_Url_TagPypiFiles,
+  { "cloud metadata endpoint", "SSRF", VEND_URL_TAGPYPIFILES,
     "http://169.254.169.254/latest/meta-data/", 0, REJECT },
-  { "wrong upstream for this URL", "SSRF", Vend_Url_TagNpmRegistry,
+  { "wrong upstream for this URL", "SSRF", VEND_URL_TAGNPMREGISTRY,
     "https://files.pythonhosted.org/packages/aa/bb/x.whl", 0, REJECT },
 
   /* ---- path traversal --------------------------------------------- */
-  { "raw ../ traversal", "path traversal", Vend_Url_TagPypiFiles,
+  { "raw ../ traversal", "path traversal", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org/../../etc/passwd", 0, REJECT },
-  { "single-dot segment", "path traversal", Vend_Url_TagPypiFiles,
+  { "single-dot segment", "path traversal", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org/./secret", 0, REJECT },
   { "percent-encoded traversal", "path traversal + encoding differential",
-    Vend_Url_TagPypiFiles,
+    VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org/%2e%2e%2f%2e%2e%2fetc/passwd", 0, REJECT },
-  { "double-encoded traversal", "path traversal", Vend_Url_TagPypiFiles,
+  { "double-encoded traversal", "path traversal", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org/%252e%252e%252fetc", 0, REJECT },
 
   /* ---- request smuggling ------------------------------------------ */
-  { "CRLF header injection", "request splitting", Vend_Url_TagPypiFiles,
+  { "CRLF header injection", "request splitting", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org/a\r\nHost:%20evil.example", 0, REJECT },
-  { "bare LF injection", "request splitting", Vend_Url_TagPypiFiles,
+  { "bare LF injection", "request splitting", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org/a\nX-Evil: 1", 0, REJECT },
-  { "space splits the request line", "request splitting", Vend_Url_TagPypiFiles,
+  { "space splits the request line", "request splitting", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org/a b", 0, REJECT },
-  { "query string smuggles a second URL", "SSRF", Vend_Url_TagPypiFiles,
+  { "query string smuggles a second URL", "SSRF", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org/x?next=https://evil.example", 0, REJECT },
-  { "fragment hides an authority", "SSRF", Vend_Url_TagPypiFiles,
+  { "fragment hides an authority", "SSRF", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org/x#@evil.example", 0, REJECT },
 
   /* ---- parser differentials --------------------------------------- */
-  { "NUL truncation", "C string truncation", Vend_Url_TagPypiFiles,
+  { "NUL truncation", "C string truncation", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org/good\0.evil.example/x", 51, REJECT },
-  { "non-ASCII homograph", "IDN/punycode homograph", Vend_Url_TagPypiFiles,
+  { "non-ASCII homograph", "IDN/punycode homograph", VEND_URL_TAGPYPIFILES,
     /* Cyrillic 'а' (U+0430) in place of ASCII 'a'; split so the hex escape
        does not swallow the following 'd'. */
     "https://files.pythonhosted.org/\xd0\xb0" "dmin", 0, REJECT },
-  { "tab in path", "request splitting", Vend_Url_TagPypiFiles,
+  { "tab in path", "request splitting", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org/a\tb", 0, REJECT },
 
   /* ---- boundary conditions ---------------------------------------- */
-  { "prefix only, nothing after", "-", Vend_Url_TagPypiFiles,
+  { "prefix only, nothing after", "-", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org/", 0, REJECT },
-  { "empty input", "-", Vend_Url_TagPypiFiles, "", 0, REJECT },
-  { "prefix truncated by one byte", "-", Vend_Url_TagPypiFiles,
+  { "empty input", "-", VEND_URL_TAGPYPIFILES, "", 0, REJECT },
+  { "prefix truncated by one byte", "-", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.or", 0, REJECT },
-  { "suffix starts with slash", "-", Vend_Url_TagPypiFiles,
+  { "suffix starts with slash", "-", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org//", 0, REJECT },
-  { "suffix starts with dot", "-", Vend_Url_TagPypiFiles,
+  { "suffix starts with dot", "-", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org/.hidden", 0, REJECT },
-  { "http instead of https", "SSRF", Vend_Url_TagPypiFiles,
+  { "http instead of https", "SSRF", VEND_URL_TAGPYPIFILES,
     "http://files.pythonhosted.org/x", 0, REJECT },
-  { "uppercase host", "-", Vend_Url_TagPypiFiles,
+  { "uppercase host", "-", VEND_URL_TAGPYPIFILES,
     "https://FILES.PYTHONHOSTED.ORG/x", 0, REJECT },
-  { "explicit port appended to host", "SSRF", Vend_Url_TagPypiFiles,
+  { "explicit port appended to host", "SSRF", VEND_URL_TAGPYPIFILES,
     "https://files.pythonhosted.org:8080/x", 0, REJECT },
 };
 

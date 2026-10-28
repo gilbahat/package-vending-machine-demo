@@ -11,10 +11,7 @@
 
 TOOLCHAIN  := .toolchain/everparse
 FSTAR      := $(TOOLCHAIN)/bin/fstar.exe
-KRML       := $(TOOLCHAIN)/bin/krml
-THREED     := $(TOOLCHAIN)/bin/3d.exe
-ULIB       := $(TOOLCHAIN)/lib/fstar/ulib
-KRMLLIB    := $(TOOLCHAIN)/lib/krml
+THREED     := $(TOOLCHAIN)/bin/everparse-3d.exe
 
 BUILD      := build
 CC         ?= cc
@@ -23,7 +20,9 @@ CC         ?= cc
 CFLAGS     := -std=c11 -D_DEFAULT_SOURCE -Wall -Wextra -Wno-unused-parameter -Wno-parentheses -O2
 INCLUDES   := -Igenerated -Iverified
 
-FSTAR_OPTS := --include $(ULIB) --include $(KRMLLIB) --include proofs
+# F* finds its own library and Pulse; only our sources need naming. Checked
+# files are cached because Custard extracts from them.
+FSTAR_OPTS := --include proofs --cache_checked_modules --cache_dir $(BUILD)/cache
 
 PROOFS     := proofs/Vend.Url.Spec.fst proofs/Vend.Url.Properties.fst proofs/Vend.Url.fst
 
@@ -67,7 +66,7 @@ $(FSTAR):
 	@exit 1
 
 # Re-check every proof. A failed proof fails the build.
-proofs: $(FSTAR)
+proofs: $(FSTAR) | $(BUILD)
 	@echo "==> checking F* proofs"
 	@for f in $(PROOFS); do \
 	   echo "    $$f"; \
@@ -75,18 +74,18 @@ proofs: $(FSTAR)
 	 done
 
 # Regenerate C from the specs into a scratch directory.
-regen: $(FSTAR)
+# Custard extracts from checked files, so Vend.Url is checked (or found in
+# the cache) first. Only validate_artifact_url is an entry point; everything
+# it reaches is emitted static.
+regen: $(FSTAR) | $(BUILD)
 	@echo "==> regenerating C from proofs/ and spec/"
-	@rm -rf $(BUILD)/regen $(BUILD)/krml && mkdir -p $(BUILD)/regen $(BUILD)/krml
-	@$(FSTAR) $(FSTAR_OPTS) --odir $(BUILD)/krml --codegen krml \
-	    --extract 'Vend.Url +Vend.Url.Spec' proofs/Vend.Url.fst
-	@$(KRML) -silent -skip-compilation -skip-makefiles -minimal \
-	    -add-early-include '"vend_krml_compat.h"' \
-	    -bundle 'Vend.Url=Vend.*' -tmpdir $(BUILD)/regen \
-	    $(BUILD)/krml/out.krml
+	@rm -rf $(BUILD)/regen && mkdir -p $(BUILD)/regen
+	@$(FSTAR) $(FSTAR_OPTS) proofs/Vend.Url.fst >/dev/null
+	@$(FSTAR) $(FSTAR_OPTS) --codegen C \
+	    --custard_entry Vend.Url.validate_artifact_url \
+	    -o $(BUILD)/regen/Vend_Url.c proofs/Vend.Url.fst >/dev/null
 	@$(THREED) --batch --odir $(BUILD)/regen --fstar $(FSTAR) \
-	    spec/VendManifest.3d
-	@rm -f $(BUILD)/regen/Prims.h
+	    spec/VendManifest.3d >/dev/null
 	@echo "==> checking generated C carries no absolute paths"
 	@if grep -l "$(HOME)" $(BUILD)/regen/*.c $(BUILD)/regen/*.h 2>/dev/null; then \
 	   echo "    generated C embeds an absolute path; regenerate from the repo root" >&2; \

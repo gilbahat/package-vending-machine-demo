@@ -15,11 +15,11 @@
 
 set -euo pipefail
 
-EVERPARSE_VERSION="v2026.10.06"
+EVERPARSE_VERSION="v2026.10.27"
 DEST="${DEST:-.toolchain}"
 
-SHA256_DARWIN_ARM64="57546534d31dca9a00388c53862b85577fb01b55acdd6852ea0f371b53a129d4"
-SHA256_LINUX_X86_64="9c02ad2a6f04bf7745ecdeb7016663be29702b889eb78a0374012a33910cf406"
+SHA256_DARWIN_ARM64="e1c57ccbb9aab4fb6df1fc9d1d6bdb18bcd359b2c838981d4c77e38c2e56ac95"
+SHA256_LINUX_X86_64="7ff9486d423ccc81305a041ee7728de6247360a736190647c9126910153e4c5b"
 
 case "$(uname -s)/$(uname -m)" in
   Darwin/arm64)        ASSET="everparse_${EVERPARSE_VERSION}_Darwin_arm64.tar.gz";  WANT="$SHA256_DARWIN_ARM64" ;;
@@ -40,7 +40,7 @@ if [ -x "${DEST}/everparse/bin/fstar.exe" ]; then
 fi
 
 mkdir -p "$DEST"
-echo "downloading ${ASSET} (~260 MB)..."
+echo "downloading ${ASSET} (~280 MB)..."
 curl -fsSL -o "${DEST}/everparse.tar.gz" "$URL"
 
 echo "verifying checksum..."

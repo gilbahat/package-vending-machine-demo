@@ -135,8 +135,10 @@ Clause 5 is one line and does most of the work, because of what it *excludes*:
 `safe_url` alone**, so the table above is machine-checked rather than asserted.
 The headline statement is `theorem`, at the bottom of that file.
 
-`proofs/Vend.Url.fst` is the Low\* implementation, proved to satisfy `safe_url`
-and extracted to C by KaRaMeL.
+`proofs/Vend.Url.fst` is the Pulse implementation, extracted to C by F\*'s
+Custard backend. It is proved *equivalent* to `safe_url`: every URL it accepts
+satisfies the predicate, and every URL that satisfies the predicate is
+accepted.
 
 ### There is exactly one gate
 
@@ -150,22 +152,24 @@ full.
 ### The generated C is meant to be read
 
 ```c
-case Vend_Url_TagPypiFiles:
-  uint8_t *p = (uint8_t *)"https://files.pythonhosted.org/";
-  uint32_t plen = 31U;
-  if (len > 512U)                        return false;
-  else if (len <= plen)                  return false;
-  else if (!Vend_Url_prefix_cmp(b, p, plen, 0U)) return false;
-  else {
-    uint8_t first = b[plen];
-    if (first == slash || first == dot)  return false;
-    else return Vend_Url_scan(b, len, plen);
-  }
+static const uint8_t Vend_Url_pypi_files_prefix[31] = { 104, 116, 116, 112, 115, 58, 47, 47, ... };
+
+static bool Vend_Url_validate_with(uint8_t *pa, size_t plen, uint8_t *b, uint32_t len) {
+  if (len > 512) return false;
+  size_t n = (size_t)len;
+  if (n <= plen) return false;
+  if (!Vend_Url_prefix_cmp(b, pa, plen)) return false;
+  uint8_t first = b[plen];
+  if ((first == Vend_Url_Spec_slash) || (first == Vend_Url_Spec_dot)) return false;
+  return Vend_Url_scan(b, n, plen);
+}
 ```
 
-The three permitted hosts appear as C string literals. There are no globals and
-no initialiser to call, and the only runtime dependency is `<stdint.h>` and
-`<stdbool.h>` — which is what makes it linkable into a freestanding unikernel.
+(Condensed: the generated code nests each `else`.) The three permitted hosts
+are `static const` byte tables, so they sit in read-only memory and there is no
+initialiser to call. Only `Vend_Url_validate_artifact_url` has external linkage,
+and the code calls no library function, which is what makes it linkable into a
+freestanding unikernel.
 
 ---
 
@@ -233,10 +237,10 @@ Being precise about this is the point; a demo that overclaims is worse than none
 
 **Proved:**
 
-* the URL gate, against `safe_url` (`proofs/`, ~500 lines of F\*)
+* the URL gate, against `safe_url` (`proofs/`, ~570 lines of F\* and Pulse)
 * the manifest parser, against `spec/VendManifest.3d` (74 lines)
 
-**Generated from those specs** — 732 lines of C (`Vend_Url.{c,h}` and
+**Generated from those specs** — 745 lines of C (`Vend_Url.{c,h}` and
 `VendManifest.{c,h}`), committed in `generated/` and re-derivable with
 `make verify`.
 
@@ -246,12 +250,12 @@ a reviewer should read:
 | File | Lines | What it does |
 |---|---|---|
 | `verified/vend_shim.c` | 95 | enforces exact-consumption on the manifest parse |
-| `verified/vend_stubs.c` | 58 | the OCaml/C boundary |
-| `generated/vend_krml_compat.h` | 45 | replaces KaRaMeL's stdio-dependent macros |
+| `verified/vend_stubs.c` | 50 | the OCaml/C boundary |
 
-**Trusted, not verified:** F\*, Z3, KaRaMeL, EverParse's own code generation,
-the 3D spec saying what I meant it to say, the OCaml runtime, `ocaml-tls`,
-`httpaf`, Solo5 itself, and the hypervisor.
+**Trusted, not verified:** F\*, Z3, Custard (F\*'s extractor), KaRaMeL and the
+rest of EverParse's own code generation, the 3D spec saying what I meant it to
+say, the OCaml runtime, `ocaml-tls`, `httpaf`, Solo5 itself, and the
+hypervisor.
 
 **Not claimed at all:** that a malicious *package's contents* are safe once
 installed — that is the sandbox's problem, not the proxy's; that traffic
@@ -311,7 +315,7 @@ parser differential, so `vend_shim.c` requires exact consumption.
 make test
 
 # 2. Re-derive the C from the specs and prove it matches what shipped.
-#    Downloads the pinned EverParse bundle (F*, KaRaMeL, 3d, Z3; ~260 MB).
+#    Downloads the pinned EverParse bundle (F*, Pulse, KaRaMeL, 3d, Z3; ~280 MB).
 make toolchain
 make verify
 
@@ -328,14 +332,15 @@ cd deploy/aws && terraform apply
 ## Reproducibility
 
 `generated/` is committed on purpose: a visitor can clone and `make test`
-without a 260 MB toolchain download. `make verify` re-runs every proof,
+without a 280 MB toolchain download. `make verify` re-runs every proof,
 regenerates the C, and **diffs it against what is committed**, so the shipped
 artefact and the proof are demonstrably the same thing. Drift is a build
 failure.
 
-Pinned versions: EverParse `v2026.10.06` (bundling F\* 2026.03.24, KaRaMeL,
-Z3 4.13.3), Solo5 `0.13.1`, MirageOS `4.11.2`. `scripts/fetch-toolchain.sh`
-verifies the toolchain tarball against the SHA-256 GitHub publishes.
+Pinned versions: EverParse `v2026.10.27` (bundling F\* 2026.10.25, Pulse,
+KaRaMeL, Z3 5.3.0), Solo5 `0.13.1`, MirageOS `4.11.2`.
+`scripts/fetch-toolchain.sh` verifies the toolchain tarball against the SHA-256
+GitHub publishes.
 
 ## Status and limitations
 

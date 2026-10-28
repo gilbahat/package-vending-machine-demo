@@ -2,420 +2,573 @@
 
 #include "VendManifest.h"
 
-#include "EverParse.h"
-
-static inline uint64_t
-ValidateVendEntry(
+static inline uint8_t
+ValidateCoreVendEntry(
   uint8_t *Ctxt,
-  EVERPARSE_ERROR_HANDLER ErrorHandlerFn,
-  uint8_t *Input,
-  uint64_t InputLength,
-  uint64_t StartPosition
+  void
+  (*ErrorHandlerFn)(
+    PRIMS_STRING x0,
+    PRIMS_STRING x1,
+    PRIMS_STRING x2,
+    uint64_t x3,
+    uint8_t *x4,
+    uint8_t *x5,
+    uint64_t x6
+  ),
+  uint8_t *SlBase,
+  size_t SlLen,
+  size_t *SlPos
 )
 {
+  size_t p = *SlPos;
+  uint64_t fieldStartVendEntry = (uint64_t)p;
+  size_t pos = (size_t)0U;
   /* Checking that we have enough space for a UINT8, i.e., 1 byte */
-  BOOLEAN hasBytesForEcosystem = (InputLength - StartPosition) >= 1ULL;
-  uint64_t positionAfterEcosystem;
-  if (hasBytesForEcosystem)
+  size_t p0 = pos;
+  size_t p1 = *SlPos;
+  size_t rem = SlLen - p1;
+  BOOLEAN hasBytes = p0 <= rem && (size_t)1U <= (rem - p0);
+  uint8_t resultAfterecosystem;
+  if (hasBytes)
   {
-    positionAfterEcosystem = StartPosition + 1ULL;
+    pos = p0 + (size_t)1U;
+    resultAfterecosystem = EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS;
   }
   else
   {
-    positionAfterEcosystem =
-      EverParseSetValidatorErrorPos(EVERPARSE_VALIDATOR_ERROR_NOT_ENOUGH_DATA,
-        StartPosition);
+    resultAfterecosystem = EVERPARSEPULSEINTERNAL_VALIDATOR_ERROR_NOT_ENOUGH_DATA;
   }
-  uint64_t positionAfterEcosystemOrError;
-  if (EverParseIsError(positionAfterEcosystem))
+  uint8_t resultAfterVendEntry;
+  if (resultAfterecosystem == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS)
   {
-    positionAfterEcosystemOrError = positionAfterEcosystem;
-  }
-  else
-  {
-    uint8_t ecosystem = Input[(uint32_t)StartPosition];
+    size_t p01 = *SlPos;
+    size_t m = p01 + (size_t)1U;
+    uint8_t *sub = SlBase + p01;
+    *SlPos = m;
+    uint8_t ecosystem = sub[0U];
     BOOLEAN ecosystemConstraintIsOk = ecosystem <= VENDMANIFEST____ECOSYSTEM_NPM;
-    uint64_t
-    positionAfterCheckedEcosystem =
-      EverParseCheckConstraintOk(ecosystemConstraintIsOk,
-        positionAfterEcosystem);
-    if (EverParseIsError(positionAfterCheckedEcosystem))
+    if (ecosystemConstraintIsOk)
     {
-      positionAfterEcosystemOrError = positionAfterCheckedEcosystem;
-    }
-    else
-    {
+      size_t p2 = *SlPos;
+      uint64_t fieldStartVendEntry1 = (uint64_t)p2;
+      size_t pos1 = (size_t)0U;
       /* Checking that we have enough space for a UINT8, i.e., 1 byte */
-      BOOLEAN hasBytesForNameLen = (InputLength - positionAfterCheckedEcosystem) >= 1ULL;
-      uint64_t positionAfterNameLen;
-      if (hasBytesForNameLen)
+      size_t p02 = pos1;
+      size_t p3 = *SlPos;
+      size_t rem1 = SlLen - p3;
+      BOOLEAN hasBytes1 = p02 <= rem1 && (size_t)1U <= (rem1 - p02);
+      uint8_t resultAfternameLen;
+      if (hasBytes1)
       {
-        positionAfterNameLen = positionAfterCheckedEcosystem + 1ULL;
+        pos1 = p02 + (size_t)1U;
+        resultAfternameLen = EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS;
       }
       else
       {
-        positionAfterNameLen =
-          EverParseSetValidatorErrorPos(EVERPARSE_VALIDATOR_ERROR_NOT_ENOUGH_DATA,
-            positionAfterCheckedEcosystem);
+        resultAfternameLen = EVERPARSEPULSEINTERNAL_VALIDATOR_ERROR_NOT_ENOUGH_DATA;
       }
-      uint64_t positionAfterNameLenOrError;
-      if (EverParseIsError(positionAfterNameLen))
+      uint8_t resultAfterVendEntry0;
+      if (resultAfternameLen == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS)
       {
-        positionAfterNameLenOrError = positionAfterNameLen;
-      }
-      else
-      {
-        uint8_t nameLen = Input[(uint32_t)positionAfterCheckedEcosystem];
+        size_t p03 = *SlPos;
+        size_t m1 = p03 + (size_t)1U;
+        uint8_t *sub1 = SlBase + p03;
+        *SlPos = m1;
+        uint8_t nameLen = sub1[0U];
         BOOLEAN nameLenConstraintIsOk = nameLen >= 1U && nameLen <= VENDMANIFEST____MAX_NAME_LEN;
-        uint64_t
-        positionAfterCheckedNameLen =
-          EverParseCheckConstraintOk(nameLenConstraintIsOk,
-            positionAfterNameLen);
-        if (EverParseIsError(positionAfterCheckedNameLen))
-        {
-          positionAfterNameLenOrError = positionAfterCheckedNameLen;
-        }
-        else
+        if (nameLenConstraintIsOk)
         {
           /* Validating field name */
-          BOOLEAN
-          hasBytesForName =
-            (InputLength - positionAfterCheckedNameLen) >= (uint64_t)(uint32_t)nameLen;
-          uint64_t resForName;
-          if (hasBytesForName)
+          size_t p4 = *SlPos;
+          uint64_t fieldStartVendEntry2 = (uint64_t)p4;
+          size_t pos2 = (size_t)0U;
+          size_t p04 = pos2;
+          size_t p5 = *SlPos;
+          size_t rem2 = SlLen - p5;
+          BOOLEAN hasBytes2 = p04 <= rem2 && (size_t)(uint32_t)nameLen <= (rem2 - p04);
+          uint8_t res;
+          if (hasBytes2)
           {
-            resForName = positionAfterCheckedNameLen + (uint64_t)(uint32_t)nameLen;
+            pos2 = p04 + (size_t)(uint32_t)nameLen;
+            res = EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS;
           }
           else
           {
-            resForName =
-              EverParseSetValidatorErrorPos(EVERPARSE_VALIDATOR_ERROR_NOT_ENOUGH_DATA,
-                positionAfterCheckedNameLen);
+            res = EVERPARSEPULSEINTERNAL_VALIDATOR_ERROR_NOT_ENOUGH_DATA;
           }
-          uint64_t positionAfterNameOrError = resForName;
-          if (EverParseIsSuccess(positionAfterNameOrError))
+          uint8_t resultAfterVendEntry1;
+          if (res == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS)
           {
-            positionAfterNameLenOrError = positionAfterNameOrError;
+            size_t consumed = pos2;
+            size_t p6 = *SlPos;
+            size_t p_ = p6 + consumed;
+            *SlPos = p_;
+            resultAfterVendEntry1 = EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS;
+          }
+          else
+          {
+            resultAfterVendEntry1 = res;
+          }
+          if (resultAfterVendEntry1 == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS)
+          {
+            resultAfterVendEntry0 = resultAfterVendEntry1;
           }
           else
           {
             ErrorHandlerFn("_VendEntry",
               "name",
-              EverParseErrorReasonOfResult(positionAfterNameOrError),
-              EverParseGetValidatorErrorKind(positionAfterNameOrError),
+              EverParsePulseInternalErrorReasonOfResult(resultAfterVendEntry1),
+              resultAfterVendEntry1 == 0U ||
+                (resultAfterVendEntry1 >= 2U && resultAfterVendEntry1 <= 8U) ? (uint64_t)(uint32_t)resultAfterVendEntry1
+                                                                             : 15ULL,
               Ctxt,
-              Input,
-              positionAfterCheckedNameLen);
-            positionAfterNameLenOrError = positionAfterNameOrError;
+              SlBase,
+              fieldStartVendEntry2);
+            resultAfterVendEntry0 = resultAfterVendEntry1;
           }
         }
+        else
+        {
+          resultAfterVendEntry0 = EVERPARSEPULSEINTERNAL_VALIDATOR_ERROR_CONSTRAINT_FAILED;
+        }
       }
-      if (EverParseIsSuccess(positionAfterNameLenOrError))
+      else
       {
-        positionAfterEcosystemOrError = positionAfterNameLenOrError;
+        resultAfterVendEntry0 = resultAfternameLen;
+      }
+      if (resultAfterVendEntry0 == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS)
+      {
+        resultAfterVendEntry = resultAfterVendEntry0;
       }
       else
       {
         ErrorHandlerFn("_VendEntry",
           "name_len",
-          EverParseErrorReasonOfResult(positionAfterNameLenOrError),
-          EverParseGetValidatorErrorKind(positionAfterNameLenOrError),
+          EverParsePulseInternalErrorReasonOfResult(resultAfterVendEntry0),
+          resultAfterVendEntry0 == 0U ||
+            (resultAfterVendEntry0 >= 2U && resultAfterVendEntry0 <= 8U) ? (uint64_t)(uint32_t)resultAfterVendEntry0
+                                                                         : 15ULL,
           Ctxt,
-          Input,
-          positionAfterCheckedEcosystem);
-        positionAfterEcosystemOrError = positionAfterNameLenOrError;
+          SlBase,
+          fieldStartVendEntry1);
+        resultAfterVendEntry = resultAfterVendEntry0;
       }
-    }
-  }
-  if (EverParseIsSuccess(positionAfterEcosystemOrError))
-  {
-    return positionAfterEcosystemOrError;
-  }
-  ErrorHandlerFn("_VendEntry",
-    "ecosystem",
-    EverParseErrorReasonOfResult(positionAfterEcosystemOrError),
-    EverParseGetValidatorErrorKind(positionAfterEcosystemOrError),
-    Ctxt,
-    Input,
-    StartPosition);
-  return positionAfterEcosystemOrError;
-}
-
-uint64_t
-VendManifestValidateVendManifest(
-  uint8_t *Ctxt,
-  EVERPARSE_ERROR_HANDLER ErrorHandlerFn,
-  uint8_t *Input,
-  uint64_t InputLength,
-  uint64_t StartPosition
-)
-{
-  /* Checking that we have enough space for a UINT32BE, i.e., 4 bytes */
-  BOOLEAN hasBytesForMagic = (InputLength - StartPosition) >= 4ULL;
-  uint64_t positionAfterMagic;
-  if (hasBytesForMagic)
-  {
-    positionAfterMagic = StartPosition + 4ULL;
-  }
-  else
-  {
-    positionAfterMagic =
-      EverParseSetValidatorErrorPos(EVERPARSE_VALIDATOR_ERROR_NOT_ENOUGH_DATA,
-        StartPosition);
-  }
-  uint64_t positionAfterMagicOrError;
-  if (EverParseIsError(positionAfterMagic))
-  {
-    positionAfterMagicOrError = positionAfterMagic;
-  }
-  else
-  {
-    uint32_t magic = Load32Be(Input + (uint32_t)StartPosition);
-    BOOLEAN magicConstraintIsOk = magic == 1447904049U;
-    uint64_t
-    positionAfterCheckedMagic = EverParseCheckConstraintOk(magicConstraintIsOk, positionAfterMagic);
-    if (EverParseIsError(positionAfterCheckedMagic))
-    {
-      positionAfterMagicOrError = positionAfterCheckedMagic;
     }
     else
     {
+      resultAfterVendEntry = EVERPARSEPULSEINTERNAL_VALIDATOR_ERROR_CONSTRAINT_FAILED;
+    }
+  }
+  else
+  {
+    resultAfterVendEntry = resultAfterecosystem;
+  }
+  if (resultAfterVendEntry == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS)
+  {
+    return resultAfterVendEntry;
+  }
+  ErrorHandlerFn("_VendEntry",
+    "ecosystem",
+    EverParsePulseInternalErrorReasonOfResult(resultAfterVendEntry),
+    resultAfterVendEntry == 0U || (resultAfterVendEntry >= 2U && resultAfterVendEntry <= 8U) ? (uint64_t)(uint32_t)resultAfterVendEntry
+                                                                                             : 15ULL,
+    Ctxt,
+    SlBase,
+    fieldStartVendEntry);
+  return resultAfterVendEntry;
+}
+
+static uint8_t
+ValidateCoreVendManifest(
+  uint8_t *Ctxt,
+  void
+  (*ErrorHandlerFn)(
+    PRIMS_STRING x0,
+    PRIMS_STRING x1,
+    PRIMS_STRING x2,
+    uint64_t x3,
+    uint8_t *x4,
+    uint8_t *x5,
+    uint64_t x6
+  ),
+  uint8_t *SlBase,
+  size_t SlLen,
+  size_t *SlPos
+)
+{
+  size_t p = *SlPos;
+  uint64_t fieldStartVendManifest = (uint64_t)p;
+  size_t pos = (size_t)0U;
+  /* Checking that we have enough space for a UINT32BE, i.e., 4 bytes */
+  size_t p0 = pos;
+  size_t p1 = *SlPos;
+  size_t rem = SlLen - p1;
+  BOOLEAN hasBytes = p0 <= rem && (size_t)4U <= (rem - p0);
+  uint8_t resultAftermagic;
+  if (hasBytes)
+  {
+    pos = p0 + (size_t)4U;
+    resultAftermagic = EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS;
+  }
+  else
+  {
+    resultAftermagic = EVERPARSEPULSEINTERNAL_VALIDATOR_ERROR_NOT_ENOUGH_DATA;
+  }
+  uint8_t resultAfterVendManifest;
+  if (resultAftermagic == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS)
+  {
+    size_t p01 = *SlPos;
+    size_t m = p01 + (size_t)4U;
+    uint8_t *sub = SlBase + p01;
+    *SlPos = m;
+    uint8_t last = sub[3U];
+    size_t pos_ = (size_t)3U - (size_t)1U;
+    uint8_t last1 = sub[pos_];
+    size_t pos_1 = pos_ - (size_t)1U;
+    uint8_t last2 = sub[pos_1];
+    uint8_t last3 = sub[0U];
+    uint32_t n = (uint32_t)last3;
+    uint32_t blast = (uint32_t)last2;
+    uint32_t n1 = blast + n * 256U;
+    uint32_t blast1 = (uint32_t)last1;
+    uint32_t n2 = blast1 + n1 * 256U;
+    uint32_t blast2 = (uint32_t)last;
+    uint32_t magic = blast2 + n2 * 256U;
+    BOOLEAN magicConstraintIsOk = magic == 1447904049U;
+    if (magicConstraintIsOk)
+    {
+      size_t p2 = *SlPos;
+      uint64_t fieldStartVendManifest1 = (uint64_t)p2;
+      size_t pos1 = (size_t)0U;
       /* Checking that we have enough space for a UINT16BE, i.e., 2 bytes */
-      BOOLEAN hasBytesForFormatVersion = (InputLength - positionAfterCheckedMagic) >= 2ULL;
-      uint64_t positionAfterFormatVersion;
-      if (hasBytesForFormatVersion)
+      size_t p02 = pos1;
+      size_t p3 = *SlPos;
+      size_t rem1 = SlLen - p3;
+      BOOLEAN hasBytes1 = p02 <= rem1 && (size_t)2U <= (rem1 - p02);
+      uint8_t resultAfterformatVersion;
+      if (hasBytes1)
       {
-        positionAfterFormatVersion = positionAfterCheckedMagic + 2ULL;
+        pos1 = p02 + (size_t)2U;
+        resultAfterformatVersion = EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS;
       }
       else
       {
-        positionAfterFormatVersion =
-          EverParseSetValidatorErrorPos(EVERPARSE_VALIDATOR_ERROR_NOT_ENOUGH_DATA,
-            positionAfterCheckedMagic);
+        resultAfterformatVersion = EVERPARSEPULSEINTERNAL_VALIDATOR_ERROR_NOT_ENOUGH_DATA;
       }
-      uint64_t positionAfterFormatVersionOrError;
-      if (EverParseIsError(positionAfterFormatVersion))
+      uint8_t resultAfterVendManifest0;
+      if (resultAfterformatVersion == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS)
       {
-        positionAfterFormatVersionOrError = positionAfterFormatVersion;
-      }
-      else
-      {
-        uint16_t formatVersion = Load16Be(Input + (uint32_t)positionAfterCheckedMagic);
+        size_t p03 = *SlPos;
+        size_t m1 = p03 + (size_t)2U;
+        uint8_t *sub1 = SlBase + p03;
+        *SlPos = m1;
+        uint8_t last4 = sub1[1U];
+        uint8_t last5 = sub1[0U];
+        uint16_t n3 = (uint16_t)(uint32_t)last5;
+        uint16_t blast3 = (uint16_t)(uint32_t)last4;
+        uint16_t formatVersion = (uint32_t)blast3 + (uint32_t)n3 * 256U;
         BOOLEAN formatVersionConstraintIsOk = formatVersion == (uint16_t)1U;
-        uint64_t
-        positionAfterCheckedFormatVersion =
-          EverParseCheckConstraintOk(formatVersionConstraintIsOk,
-            positionAfterFormatVersion);
-        if (EverParseIsError(positionAfterCheckedFormatVersion))
+        if (formatVersionConstraintIsOk)
         {
-          positionAfterFormatVersionOrError = positionAfterCheckedFormatVersion;
-        }
-        else
-        {
+          size_t p4 = *SlPos;
+          uint64_t fieldStartVendManifest2 = (uint64_t)p4;
+          size_t pos2 = (size_t)0U;
           /* Checking that we have enough space for a UINT16BE, i.e., 2 bytes */
-          BOOLEAN hasBytesForReserved = (InputLength - positionAfterCheckedFormatVersion) >= 2ULL;
-          uint64_t positionAfterReserved;
-          if (hasBytesForReserved)
+          size_t p04 = pos2;
+          size_t p5 = *SlPos;
+          size_t rem2 = SlLen - p5;
+          BOOLEAN hasBytes2 = p04 <= rem2 && (size_t)2U <= (rem2 - p04);
+          uint8_t resultAfterreserved;
+          if (hasBytes2)
           {
-            positionAfterReserved = positionAfterCheckedFormatVersion + 2ULL;
+            pos2 = p04 + (size_t)2U;
+            resultAfterreserved = EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS;
           }
           else
           {
-            positionAfterReserved =
-              EverParseSetValidatorErrorPos(EVERPARSE_VALIDATOR_ERROR_NOT_ENOUGH_DATA,
-                positionAfterCheckedFormatVersion);
+            resultAfterreserved = EVERPARSEPULSEINTERNAL_VALIDATOR_ERROR_NOT_ENOUGH_DATA;
           }
-          uint64_t positionAfterReservedOrError;
-          if (EverParseIsError(positionAfterReserved))
+          uint8_t resultAfterVendManifest1;
+          if (resultAfterreserved == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS)
           {
-            positionAfterReservedOrError = positionAfterReserved;
-          }
-          else
-          {
-            uint16_t reserved = Load16Be(Input + (uint32_t)positionAfterCheckedFormatVersion);
+            size_t p05 = *SlPos;
+            size_t m2 = p05 + (size_t)2U;
+            uint8_t *sub2 = SlBase + p05;
+            *SlPos = m2;
+            uint8_t last6 = sub2[1U];
+            uint8_t last7 = sub2[0U];
+            uint16_t n4 = (uint16_t)(uint32_t)last7;
+            uint16_t blast4 = (uint16_t)(uint32_t)last6;
+            uint16_t reserved = (uint32_t)blast4 + (uint32_t)n4 * 256U;
             BOOLEAN reservedConstraintIsOk = reserved == (uint16_t)0U;
-            uint64_t
-            positionAfterCheckedReserved =
-              EverParseCheckConstraintOk(reservedConstraintIsOk,
-                positionAfterReserved);
-            if (EverParseIsError(positionAfterCheckedReserved))
+            if (reservedConstraintIsOk)
             {
-              positionAfterReservedOrError = positionAfterCheckedReserved;
-            }
-            else
-            {
+              size_t p6 = *SlPos;
+              uint64_t fieldStartVendManifest3 = (uint64_t)p6;
+              size_t pos3 = (size_t)0U;
               /* Checking that we have enough space for a UINT32BE, i.e., 4 bytes */
-              BOOLEAN hasBytesForEntriesLen = (InputLength - positionAfterCheckedReserved) >= 4ULL;
-              uint64_t positionAfterEntriesLen;
-              if (hasBytesForEntriesLen)
+              size_t p06 = pos3;
+              size_t p7 = *SlPos;
+              size_t rem3 = SlLen - p7;
+              BOOLEAN hasBytes3 = p06 <= rem3 && (size_t)4U <= (rem3 - p06);
+              uint8_t resultAfterentriesLen;
+              if (hasBytes3)
               {
-                positionAfterEntriesLen = positionAfterCheckedReserved + 4ULL;
+                pos3 = p06 + (size_t)4U;
+                resultAfterentriesLen = EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS;
               }
               else
               {
-                positionAfterEntriesLen =
-                  EverParseSetValidatorErrorPos(EVERPARSE_VALIDATOR_ERROR_NOT_ENOUGH_DATA,
-                    positionAfterCheckedReserved);
+                resultAfterentriesLen = EVERPARSEPULSEINTERNAL_VALIDATOR_ERROR_NOT_ENOUGH_DATA;
               }
-              uint64_t positionAfterEntriesLenOrError;
-              if (EverParseIsError(positionAfterEntriesLen))
+              uint8_t resultAfterVendManifest2;
+              if (resultAfterentriesLen == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS)
               {
-                positionAfterEntriesLenOrError = positionAfterEntriesLen;
-              }
-              else
-              {
-                uint32_t entriesLen = Load32Be(Input + (uint32_t)positionAfterCheckedReserved);
+                size_t p07 = *SlPos;
+                size_t m3 = p07 + (size_t)4U;
+                uint8_t *sub3 = SlBase + p07;
+                *SlPos = m3;
+                uint8_t last8 = sub3[3U];
+                size_t pos_2 = (size_t)3U - (size_t)1U;
+                uint8_t last9 = sub3[pos_2];
+                size_t pos_3 = pos_2 - (size_t)1U;
+                uint8_t last10 = sub3[pos_3];
+                uint8_t last11 = sub3[0U];
+                uint32_t n5 = (uint32_t)last11;
+                uint32_t blast5 = (uint32_t)last10;
+                uint32_t n6 = blast5 + n5 * 256U;
+                uint32_t blast6 = (uint32_t)last9;
+                uint32_t n7 = blast6 + n6 * 256U;
+                uint32_t blast7 = (uint32_t)last8;
+                uint32_t entriesLen = blast7 + n7 * 256U;
                 BOOLEAN entriesLenConstraintIsOk = entriesLen <= 1048576U;
-                uint64_t
-                positionAfterCheckedEntriesLen =
-                  EverParseCheckConstraintOk(entriesLenConstraintIsOk,
-                    positionAfterEntriesLen);
-                if (EverParseIsError(positionAfterCheckedEntriesLen))
-                {
-                  positionAfterEntriesLenOrError = positionAfterCheckedEntriesLen;
-                }
-                else
+                if (entriesLenConstraintIsOk)
                 {
                   /* Validating field entries */
-                  BOOLEAN
-                  hasEnoughBytes =
-                    (InputLength - positionAfterCheckedEntriesLen) >= (uint64_t)entriesLen;
-                  uint64_t positionAfterEntriesOrError;
-                  if (!hasEnoughBytes)
+                  size_t p8 = *SlPos;
+                  uint64_t fieldStartVendManifest4 = (uint64_t)p8;
+                  size_t nSz = (size_t)entriesLen;
+                  size_t p9 = *SlPos;
+                  size_t avail = SlLen - p9;
+                  BOOLEAN hasBytes4 = nSz <= avail;
+                  uint8_t resultAfterVendManifest3;
+                  if (!hasBytes4)
                   {
-                    positionAfterEntriesOrError =
-                      EverParseSetValidatorErrorPos(EVERPARSE_VALIDATOR_ERROR_NOT_ENOUGH_DATA,
-                        positionAfterCheckedEntriesLen);
+                    resultAfterVendManifest3 =
+                      EVERPARSEPULSEINTERNAL_VALIDATOR_ERROR_NOT_ENOUGH_DATA;
                   }
                   else
                   {
-                    uint8_t *truncatedInput = Input;
-                    uint64_t
-                    truncatedInputLength = positionAfterCheckedEntriesLen + (uint64_t)entriesLen;
-                    uint64_t listResultForEntries = positionAfterCheckedEntriesLen;
-                    while (TRUE)
+                    size_t p10 = *SlPos;
+                    size_t tr = p10 + nSz;
+                    uint8_t res = EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS;
+                    BOOLEAN stop = FALSE;
+                    BOOLEAN anf0 = stop;
+                    BOOLEAN cond = !anf0;
+                    while (cond)
                     {
-                      uint64_t position = listResultForEntries;
-                      BOOLEAN ite;
-                      if (!((truncatedInputLength - position) >= 1ULL))
+                      size_t p11 = *SlPos;
+                      size_t avail1 = tr - p11;
+                      BOOLEAN hasMore = (size_t)1U <= avail1;
+                      if (!hasMore)
                       {
-                        ite = TRUE;
+                        stop = TRUE;
                       }
                       else
                       {
-                        uint64_t
-                        positionAfterEntries_elementOrError =
-                          ValidateVendEntry(Ctxt,
+                        size_t p12 = *SlPos;
+                        uint64_t fieldStartVendManifest5 = (uint64_t)p12;
+                        uint8_t
+                        resultAfterVendManifest4 =
+                          ValidateCoreVendEntry(Ctxt,
                             ErrorHandlerFn,
-                            truncatedInput,
-                            truncatedInputLength,
-                            position);
-                        uint64_t resultForEntries;
-                        if (EverParseIsSuccess(positionAfterEntries_elementOrError))
+                            SlBase,
+                            tr,
+                            SlPos);
+                        uint8_t r;
+                        if (resultAfterVendManifest4 == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS)
                         {
-                          resultForEntries = positionAfterEntries_elementOrError;
+                          r = resultAfterVendManifest4;
                         }
                         else
                         {
                           ErrorHandlerFn("_VendManifest",
                             "entries.element",
-                            EverParseErrorReasonOfResult(positionAfterEntries_elementOrError),
-                            EverParseGetValidatorErrorKind(positionAfterEntries_elementOrError),
+                            EverParsePulseInternalErrorReasonOfResult(resultAfterVendManifest4),
+                            resultAfterVendManifest4 == 0U ||
+                              (resultAfterVendManifest4 >= 2U && resultAfterVendManifest4 <= 8U) ? (uint64_t)(uint32_t)resultAfterVendManifest4
+                                                                                                 : 15ULL,
                             Ctxt,
-                            truncatedInput,
-                            position);
-                          resultForEntries = positionAfterEntries_elementOrError;
+                            SlBase,
+                            fieldStartVendManifest5);
+                          r = resultAfterVendManifest4;
                         }
-                        listResultForEntries = resultForEntries;
-                        ite = EverParseIsError(resultForEntries);
+                        if (!(r == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS))
+                        {
+                          res = r;
+                          stop = TRUE;
+                        }
                       }
-                      if (ite)
-                      {
-                        break;
-                      }
+                      BOOLEAN anf00 = stop;
+                      cond = !anf00;
                     }
-                    uint64_t resForEntries = listResultForEntries;
-                    positionAfterEntriesOrError = resForEntries;
+                    uint8_t fres = res;
+                    resultAfterVendManifest3 =
+                      fres == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS ? fres
+                                                                       : fres;
                   }
-                  if (EverParseIsSuccess(positionAfterEntriesOrError))
+                  if (resultAfterVendManifest3 == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS)
                   {
-                    positionAfterEntriesLenOrError = positionAfterEntriesOrError;
+                    resultAfterVendManifest2 = resultAfterVendManifest3;
                   }
                   else
                   {
                     ErrorHandlerFn("_VendManifest",
                       "entries",
-                      EverParseErrorReasonOfResult(positionAfterEntriesOrError),
-                      EverParseGetValidatorErrorKind(positionAfterEntriesOrError),
+                      EverParsePulseInternalErrorReasonOfResult(resultAfterVendManifest3),
+                      resultAfterVendManifest3 == 0U ||
+                        (resultAfterVendManifest3 >= 2U && resultAfterVendManifest3 <= 8U) ? (uint64_t)(uint32_t)resultAfterVendManifest3
+                                                                                           : 15ULL,
                       Ctxt,
-                      Input,
-                      positionAfterCheckedEntriesLen);
-                    positionAfterEntriesLenOrError = positionAfterEntriesOrError;
+                      SlBase,
+                      fieldStartVendManifest4);
+                    resultAfterVendManifest2 = resultAfterVendManifest3;
                   }
                 }
+                else
+                {
+                  resultAfterVendManifest2 =
+                    EVERPARSEPULSEINTERNAL_VALIDATOR_ERROR_CONSTRAINT_FAILED;
+                }
               }
-              if (EverParseIsSuccess(positionAfterEntriesLenOrError))
+              else
               {
-                positionAfterReservedOrError = positionAfterEntriesLenOrError;
+                resultAfterVendManifest2 = resultAfterentriesLen;
+              }
+              if (resultAfterVendManifest2 == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS)
+              {
+                resultAfterVendManifest1 = resultAfterVendManifest2;
               }
               else
               {
                 ErrorHandlerFn("_VendManifest",
                   "entries_len",
-                  EverParseErrorReasonOfResult(positionAfterEntriesLenOrError),
-                  EverParseGetValidatorErrorKind(positionAfterEntriesLenOrError),
+                  EverParsePulseInternalErrorReasonOfResult(resultAfterVendManifest2),
+                  resultAfterVendManifest2 == 0U ||
+                    (resultAfterVendManifest2 >= 2U && resultAfterVendManifest2 <= 8U) ? (uint64_t)(uint32_t)resultAfterVendManifest2
+                                                                                       : 15ULL,
                   Ctxt,
-                  Input,
-                  positionAfterCheckedReserved);
-                positionAfterReservedOrError = positionAfterEntriesLenOrError;
+                  SlBase,
+                  fieldStartVendManifest3);
+                resultAfterVendManifest1 = resultAfterVendManifest2;
               }
             }
+            else
+            {
+              resultAfterVendManifest1 = EVERPARSEPULSEINTERNAL_VALIDATOR_ERROR_CONSTRAINT_FAILED;
+            }
           }
-          if (EverParseIsSuccess(positionAfterReservedOrError))
+          else
           {
-            positionAfterFormatVersionOrError = positionAfterReservedOrError;
+            resultAfterVendManifest1 = resultAfterreserved;
+          }
+          if (resultAfterVendManifest1 == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS)
+          {
+            resultAfterVendManifest0 = resultAfterVendManifest1;
           }
           else
           {
             ErrorHandlerFn("_VendManifest",
               "reserved",
-              EverParseErrorReasonOfResult(positionAfterReservedOrError),
-              EverParseGetValidatorErrorKind(positionAfterReservedOrError),
+              EverParsePulseInternalErrorReasonOfResult(resultAfterVendManifest1),
+              resultAfterVendManifest1 == 0U ||
+                (resultAfterVendManifest1 >= 2U && resultAfterVendManifest1 <= 8U) ? (uint64_t)(uint32_t)resultAfterVendManifest1
+                                                                                   : 15ULL,
               Ctxt,
-              Input,
-              positionAfterCheckedFormatVersion);
-            positionAfterFormatVersionOrError = positionAfterReservedOrError;
+              SlBase,
+              fieldStartVendManifest2);
+            resultAfterVendManifest0 = resultAfterVendManifest1;
           }
         }
+        else
+        {
+          resultAfterVendManifest0 = EVERPARSEPULSEINTERNAL_VALIDATOR_ERROR_CONSTRAINT_FAILED;
+        }
       }
-      if (EverParseIsSuccess(positionAfterFormatVersionOrError))
+      else
       {
-        positionAfterMagicOrError = positionAfterFormatVersionOrError;
+        resultAfterVendManifest0 = resultAfterformatVersion;
+      }
+      if (resultAfterVendManifest0 == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS)
+      {
+        resultAfterVendManifest = resultAfterVendManifest0;
       }
       else
       {
         ErrorHandlerFn("_VendManifest",
           "format_version",
-          EverParseErrorReasonOfResult(positionAfterFormatVersionOrError),
-          EverParseGetValidatorErrorKind(positionAfterFormatVersionOrError),
+          EverParsePulseInternalErrorReasonOfResult(resultAfterVendManifest0),
+          resultAfterVendManifest0 == 0U ||
+            (resultAfterVendManifest0 >= 2U && resultAfterVendManifest0 <= 8U) ? (uint64_t)(uint32_t)resultAfterVendManifest0
+                                                                               : 15ULL,
           Ctxt,
-          Input,
-          positionAfterCheckedMagic);
-        positionAfterMagicOrError = positionAfterFormatVersionOrError;
+          SlBase,
+          fieldStartVendManifest1);
+        resultAfterVendManifest = resultAfterVendManifest0;
       }
     }
+    else
+    {
+      resultAfterVendManifest = EVERPARSEPULSEINTERNAL_VALIDATOR_ERROR_CONSTRAINT_FAILED;
+    }
   }
-  if (EverParseIsSuccess(positionAfterMagicOrError))
+  else
   {
-    return positionAfterMagicOrError;
+    resultAfterVendManifest = resultAftermagic;
+  }
+  if (resultAfterVendManifest == EVERPARSEPULSEINTERNAL_VALIDATOR_SUCCESS)
+  {
+    return resultAfterVendManifest;
   }
   ErrorHandlerFn("_VendManifest",
     "magic",
-    EverParseErrorReasonOfResult(positionAfterMagicOrError),
-    EverParseGetValidatorErrorKind(positionAfterMagicOrError),
+    EverParsePulseInternalErrorReasonOfResult(resultAfterVendManifest),
+    resultAfterVendManifest == 0U ||
+      (resultAfterVendManifest >= 2U && resultAfterVendManifest <= 8U) ? (uint64_t)(uint32_t)resultAfterVendManifest
+                                                                       : 15ULL,
     Ctxt,
-    Input,
-    StartPosition);
-  return positionAfterMagicOrError;
+    SlBase,
+    fieldStartVendManifest);
+  return resultAfterVendManifest;
+}
+
+uint64_t
+VendManifestValidateVendManifest(
+  uint8_t *Ctxt,
+  void
+  (*Handler)(
+    PRIMS_STRING x0,
+    PRIMS_STRING x1,
+    PRIMS_STRING x2,
+    uint64_t x3,
+    uint8_t *x4,
+    uint8_t *x5,
+    uint64_t x6
+  ),
+  uint8_t *Input,
+  uint64_t Length,
+  uint64_t Start
+)
+{
+  size_t len = (size_t)Length;
+  size_t initial = (size_t)Start;
+  size_t cursor = initial;
+  uint8_t status = ValidateCoreVendManifest(Ctxt, Handler, Input, len, &cursor);
+  size_t final = cursor;
+  uint64_t position = (uint64_t)final;
+  return
+    (status == 0U || (status >= 2U && status <= 8U) ? (uint64_t)(uint32_t)status : 15ULL) *
+      1152921504606846976ULL
+    + position;
 }
 

@@ -18,7 +18,8 @@ PERFORMANCE OF THIS SOFTWARE.
 
 This project vendors generated code produced by tools with their own licences:
 
-  * generated/Vend_Url.{c,h} are produced by KaRaMeL from proofs/*.fst.
+  * generated/Vend_Url.{c,h} are produced by F*'s Custard extractor from
+    proofs/*.fst.
   * generated/VendManifest*.{c,h}, EverParse.h and EverParseEndianness.h are
     produced by EverParse/3d from spec/VendManifest.3d, and carry Microsoft
     copyright headers under the Apache-2.0 licence. Those headers are left

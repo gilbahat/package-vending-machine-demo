@@ -18,7 +18,8 @@ module Vend.Url.Spec
 module Seq  = FStar.Seq
 module U8   = FStar.UInt8
 module List = FStar.List.Tot
-module Lit  = LowStar.Literal
+module Char = FStar.Char
+module Str  = FStar.String
 
 type byte  = U8.t
 type bytes = Seq.seq byte
@@ -75,6 +76,17 @@ type upstream =
   | PypiFiles     (* https://files.pythonhosted.org/     wheels and sdists     *)
   | NpmRegistry   (* https://registry.npmjs.org/         packuments + tarballs *)
 
+(* F* string literals are sequences of Unicode code points. Restricting the
+   prefixes to ASCII makes each code point exactly one byte, so the bytes
+   compared at run time are the characters written below. *)
+let is_ascii_char (c:Char.char) : bool = Char.int_of_char c < 128
+
+let ascii_string = s:string{List.for_all is_ascii_char (Str.list_of_string s)}
+
+(* On an ASCII character the `% 256` is the identity; it is there only so this
+   is total on every character. *)
+let byte_of_char (c:Char.char) : byte = U8.uint_to_t (Char.int_of_char c % 256)
+
 (** The literal each upstream's URLs must begin with.
 
     These three strings are the entire outbound reach of the vending machine.
@@ -84,19 +96,24 @@ type upstream =
    string's code points -- which F* discharges by normalisation rather than by
    SMT, hence the assert_norm on each literal. *)
 unfold
-let prefix_string (u:upstream) : Lit.ascii_string =
+let prefix_string (u:upstream) : ascii_string =
   match u with
   | PypiIndex ->
-      assert_norm (Lit.is_ascii_string "https://pypi.org/simple/");
+      assert_norm (List.for_all is_ascii_char (Str.list_of_string "https://pypi.org/simple/"));
       "https://pypi.org/simple/"
   | PypiFiles ->
-      assert_norm (Lit.is_ascii_string "https://files.pythonhosted.org/");
+      assert_norm (List.for_all is_ascii_char (Str.list_of_string "https://files.pythonhosted.org/"));
       "https://files.pythonhosted.org/"
   | NpmRegistry ->
-      assert_norm (Lit.is_ascii_string "https://registry.npmjs.org/");
+      assert_norm (List.for_all is_ascii_char (Str.list_of_string "https://registry.npmjs.org/"));
       "https://registry.npmjs.org/"
 
-let prefix_seq (u:upstream) : bytes = Lit.u8s_of_ascii_string (prefix_string u)
+(** The prefix as a list of bytes, which is the form the implementation bakes
+    into the program image. *)
+let prefix_list (u:upstream) : list byte =
+  List.map byte_of_char (Str.list_of_string (prefix_string u))
+
+let prefix_seq (u:upstream) : bytes = Seq.seq_of_list (prefix_list u)
 
 (* Defined as the length rather than asserted to equal a literal. The concrete
    values are 24, 31 and 27, but stating them here would only create an

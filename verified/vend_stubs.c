@@ -15,7 +15,6 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
-#include <caml/misc.h>
 
 #include "Vend_Url.h"
 #include "vend_shim.h"
@@ -23,16 +22,9 @@
 /* Pin the OCaml-side tag numbering to the C enum. If the generated header
  * ever renumbers, this fails to compile rather than silently mapping PyPI
  * requests onto the npm prefix. */
-_Static_assert(Vend_Url_TagPypiIndex   == 0, "tag numbering drifted");
-_Static_assert(Vend_Url_TagPypiFiles   == 1, "tag numbering drifted");
-_Static_assert(Vend_Url_TagNpmRegistry == 2, "tag numbering drifted");
-
-/* Reachable only if C code passes a tag outside the enum, which the OCaml
- * type system prevents. */
-_Noreturn void vend_panic(const char *msg)
-{
-    caml_fatal_error("%s", msg);
-}
+_Static_assert(VEND_URL_TAGPYPIINDEX   == 0, "tag numbering drifted");
+_Static_assert(VEND_URL_TAGPYPIFILES   == 1, "tag numbering drifted");
+_Static_assert(VEND_URL_TAGNPMREGISTRY == 2, "tag numbering drifted");
 
 CAMLprim value caml_vend_validate_url(value tag, value url)
 {
