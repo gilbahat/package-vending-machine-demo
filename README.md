@@ -140,6 +140,11 @@ Custard backend. It is proved *equivalent* to `safe_url`: every URL it accepts
 satisfies the predicate, and every URL that satisfies the predicate is
 accepted.
 
+Pulse's separation logic also proves it memory-safe: every read is in bounds,
+and the function holds only a fractional, read-only permission on the input
+buffer, so it cannot write to the bytes it is judging. It allocates nothing and
+performs no I/O.
+
 ### There is exactly one gate
 
 There is no verified URL *builder*. Every URL — those the unikernel constructs
@@ -237,7 +242,8 @@ Being precise about this is the point; a demo that overclaims is worse than none
 
 **Proved:**
 
-* the URL gate, against `safe_url` (`proofs/`, ~570 lines of F\* and Pulse)
+* the URL gate: equivalent to `safe_url`, memory-safe, read-only on its input
+  (`proofs/`, ~570 lines of F\* and Pulse)
 * the manifest parser, against `spec/VendManifest.3d` (74 lines)
 
 **Generated from those specs** — 745 lines of C (`Vend_Url.{c,h}` and
