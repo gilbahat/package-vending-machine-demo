@@ -44,7 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # ~260 MB, pinned by SHA-256 in scripts/fetch-toolchain.sh; the key
+      # ~280 MB, pinned by SHA-256 in scripts/fetch-toolchain.sh; the key
       # follows that script, so bumping the pin invalidates the cache.
       - name: Cache the EverParse toolchain
         id: toolchain

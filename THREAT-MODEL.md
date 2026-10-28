@@ -134,9 +134,9 @@ Being straight about this is the point.
   same package in a loop.
 
 * **Bugs below the proof.** `ocaml-tls`, `httpaf`, the OCaml runtime, Solo5 and
-  the hypervisor are trusted, not verified. So are F\*, Z3, KaRaMeL and
-  EverParse's code generation — a proof is only as good as its checker and its
-  extraction. What the proof removes is an entire class of *application* logic
+  the hypervisor are trusted, not verified. So are F\*, Z3, Custard, KaRaMeL
+  and EverParse's code generation — a proof is only as good as its checker and
+  its extraction. What the proof removes is an entire class of *application* logic
   bug, in the specific component that class was exploited in.
 
 * **A wrong specification.** `safe_url` could be proved and still be the wrong

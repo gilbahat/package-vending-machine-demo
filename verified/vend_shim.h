@@ -1,10 +1,10 @@
 /*
  * vend_shim.h -- the thin, TRUSTED boundary around the generated validators.
  *
- * Everything in generated/ is produced by EverParse or KaRaMeL from a spec.
- * This file is not: it is hand-written C, and it is therefore part of the
- * trusted computing base. It is kept deliberately small -- a few dozen lines --
- * so that it can be read in full.
+ * Everything in generated/ is produced from a spec, by EverParse or by F*'s
+ * Custard extractor. This file is not: it is hand-written C, and it is
+ * therefore part of the trusted computing base. It is kept deliberately small
+ * -- a few dozen lines -- so that it can be read in full.
  *
  * It exists for one reason. EverParse's generated wrapper answers "do these
  * bytes contain a well-formed VendManifest?" but not "do these bytes contain

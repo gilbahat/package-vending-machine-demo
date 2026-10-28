@@ -1,8 +1,8 @@
 ; The verified library: generated C plus the thin trusted boundary around it.
 ;
-; The C sources live in ../generated (produced by KaRaMeL and EverParse) and
-; are copied in rather than duplicated, so there is exactly one copy in the
-; repository and `make verify` has a single thing to diff.
+; The C sources live in ../generated (produced by F*'s Custard and by
+; EverParse) and are copied in rather than duplicated, so there is exactly one
+; copy in the repository and `make verify` has a single thing to diff.
 ;
 ; Note that VendManifestWrapper.c is copied but deliberately NOT compiled:
 ; vend_shim.c supersedes it, because the generated wrapper does not require
